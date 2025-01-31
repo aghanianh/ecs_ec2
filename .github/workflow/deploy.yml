@@ -1,0 +1,91 @@
+  name: Build, Push, and Deploy to ECS
+
+  on:
+    push:
+      branches:
+        - main  
+    pull_request:
+      branches:
+        - main  
+
+  env:
+    AWS_REGION: us-east-1
+    ECR_REPOSITORY: my-ecr-repo 
+    ECS_CLUSTER: my-ecs-cluster  
+    ECS_SERVICE: my-ecs-service  
+    MAX_IMAGES_TO_KEEP: 5 
+
+  jobs:
+    build-and-deploy:
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v3
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ env.AWS_REGION }}
+
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v1
+
+        - name: Check or create ECR repository
+          id: check-ecr-repo
+          run: |
+            if aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} > /dev/null 2>&1; then
+              echo "ECR repository exists"
+            else
+              echo "ECR repository does not exist. Creating it..."
+              aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+            fi
+
+        - name: Build Docker image
+          run: |
+            docker build -t ${{ env.ECR_REPOSITORY }} -f App/Dockerfile App/
+
+        - name: Tag Docker image
+          run: |
+            docker tag ${{ env.ECR_REPOSITORY }}:latest \
+              ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+        - name: Push Docker image to ECR
+          run: |
+            docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+        - name: Clean up old ECR images
+          run: |
+            IMAGES_TO_DELETE=$(aws ecr list-images --repository-name ${{ env.ECR_REPOSITORY }} \
+              --query 'imageIds[:'$((env.MAX_IMAGES_TO_KEEP))']' --output json)
+            if [ "$IMAGES_TO_DELETE" != "[]" ]; then
+              echo "Deleting old images..."
+              aws ecr batch-delete-image --repository-name ${{ env.ECR_REPOSITORY }} \
+                --image-ids "$IMAGES_TO_DELETE"
+            else
+              echo "No old images to delete."
+            fi
+
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v2
+          with:
+            terraform_version: 1.10.5 
+
+        - name: Get ECR repository URL
+          id: get-ecr-url
+          run: |
+            echo "ecr_repo_url=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}" >> $GITHUB_OUTPUT
+
+        - name: Initialization
+          run: terraform init
+
+        - name: Deploy
+          run: |
+            terraform apply -auto-approve \
+              -var="cluster_name=${{ env.ECS_CLUSTER }}" \
+              -var="container_name=my-container" \
+              -var="ecr_repo_url=${{ steps.get-ecr-url.outputs.ecr_repo_url }}" \
+              -var="ecs_service_name=${{ env.ECS_SERVICE }}"
