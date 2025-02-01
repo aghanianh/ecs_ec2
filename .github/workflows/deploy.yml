@@ -49,10 +49,12 @@ jobs:
         id: ecr-url
         run: |
           echo "::set-output name=ecr_url::${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
       - name: Teraform Init
         run: |
           terraform init 
-          
+
       - name: Terraform Apply
         run: |
           terraform apply -var="ecr_url=${{ steps.ecr-url.outputs.ecr_url }}"
