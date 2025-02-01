@@ -100,7 +100,7 @@ resource "aws_ecs_task_definition" "this" {
       portMappings = [
         {
           containerPort = 5000
-          hostPort      = 80
+          hostPort      = 5000
         }
       ]
     }
