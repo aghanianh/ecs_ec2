@@ -57,4 +57,4 @@ jobs:
 
       - name: Terraform Apply
         run: |
-          terraform apply -var="ecr_url=${{ steps.ecr-url.outputs.ecr_url }}"
+          terraform apply 
