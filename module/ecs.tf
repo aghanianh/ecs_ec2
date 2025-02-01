@@ -91,6 +91,9 @@ resource "aws_ecs_task_definition" "this" {
   family                   = "ecs-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
+  cpu                      = "256"
+  memory                   = "512"
+
   execution_role_arn       = aws_iam_role.this.arn
   container_definitions = jsonencode([
     {
