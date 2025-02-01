@@ -171,7 +171,6 @@ resource "aws_instance" "ecs_instance" {
   vpc_security_group_ids      = [aws_security_group.this.id]
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.ecs_instance_profile.name
-    key_name                    = "ecs-key"
 
   user_data = <<-EOF
               #!/bin/bash
