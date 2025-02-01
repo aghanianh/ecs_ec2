@@ -34,7 +34,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ env.ECR_REPOSITORY }} .
+          docker build -t ${{ env.ECR_REPOSITORY }} -f App/Dockerfile App/
 
       - name: Tag Docker image
         run: |
