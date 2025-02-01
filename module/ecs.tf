@@ -100,10 +100,11 @@ resource "aws_ecs_task_definition" "this" {
       name      = var.container_name
       image     = var.ecr_repo_url
       essential = true
+      memory = 512
       portMappings = [
         {
           containerPort = 5000
-          hostPort      = 80
+          hostPort      = 5000
         }
       ]
     }
