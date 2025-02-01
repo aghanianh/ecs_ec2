@@ -1,9 +1,3 @@
-# modules/ecs/main.tf
-
-resource "aws_ecs_cluster" "this" {
-  name = var.cluster_name
-}
-
 resource "aws_vpc" "this" {
   cidr_block = var.cidr_block
   tags = {
@@ -43,6 +37,7 @@ resource "aws_route_table_association" "this" {
   subnet_id      = aws_subnet.this.id
 }
 
+
 resource "aws_security_group" "this" {
   vpc_id = aws_vpc.this.id
   ingress {
@@ -67,6 +62,12 @@ resource "aws_security_group" "this" {
     Name = "${var.vpc_name}_SG"
   }
 }
+
+
+resource "aws_ecs_cluster" "this" {
+  name = var.cluster_name
+}
+
 
 resource "aws_iam_role" "ecs_instance_role" {
   name = "ecs-instance-role"
@@ -95,6 +96,7 @@ resource "aws_iam_instance_profile" "ecs_instance_profile" {
   role = aws_iam_role.ecs_instance_role.name
 }
 
+
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecs-task-execution-role"
 
@@ -117,9 +119,16 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# Add Permission for ECS to pull images from ECR
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_ecr" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+
 resource "aws_ecs_task_definition" "this" {
   family                   = "ecs-task"
-  network_mode             = "awsvpc"
+  network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
@@ -128,7 +137,7 @@ resource "aws_ecs_task_definition" "this" {
   container_definitions = jsonencode([
     {
       name      = var.container_name
-      image     = var.ecr_repo_url
+      image     = "985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:latest"
       essential = true
       memory    = 512
       portMappings = [
@@ -148,19 +157,21 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 1
   launch_type     = "EC2"
 
-  network_configuration {
-    subnets         = [aws_subnet.this.id]
-    security_groups = [aws_security_group.this.id]
-  }
+#  network_configuration {
+#    subnets         = [aws_subnet.this.id]
+#    security_groups = [aws_security_group.this.id]
+#  }
 }
 
+
 resource "aws_instance" "ecs_instance" {
-  ami                         = "ami-0c02fb55956c7d316" # Amazon ECS-optimized AMI
+  ami                         = "ami-0419538084bce80f7" # Amazon ECS-optimized AMI
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.this.id
   vpc_security_group_ids      = [aws_security_group.this.id]
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.ecs_instance_profile.name
+    key_name                    = "ecs-key"
 
   user_data = <<-EOF
               #!/bin/bash

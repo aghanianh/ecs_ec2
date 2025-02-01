@@ -46,5 +46,13 @@ jobs:
           docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
       - name: Output ECR repository URL
+        id: ecr-url
         run: |
-          echo "ECR repository URL: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+          echo "::set-output name=ecr_url::${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+      - name: Teraform Init
+        run: |
+          terraform init 
+          
+      - name: Terraform Apply
+        run: |
+          terraform apply -var="ecr_url=${{ steps.ecr-url.outputs.ecr_url }}"

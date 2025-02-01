@@ -1,14 +1,12 @@
 module "ecs" {
-  source = "./module/ecs"
-
-  cluster_name    = var.cluster_name
-  vpc_name        = var.vpc_name
-  cidr_block      = var.cidr_block
-  container_name  = var.container_name
-  ecr_repo_url    = var.ecr_repo_url
-  ecs_service_name = var.ecs_service_name
+  source           = "./module/ecs"
+  cluster_name     = "my-cluster"       
+  container_name   = "my-container"     
+  ecs_service_name = "my-service-name"
+  vpc_name         = "ECS_VPC"
+  cidr_block       = "10.0.0.0/16"
+  ecr_repo_url     = "985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:latest"
 }
-
 output "ecs_instance_public_ip" {
   value = module.ecs.ip_addr
 }
