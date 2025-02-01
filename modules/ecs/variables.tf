@@ -1,25 +1,40 @@
-variable "cluster_name" {
-  type = string 
+variable "aws_region" {
+  description = "The AWS region to deploy resources"
+  type        = string
+  default     = "us-east-1"
 }
 
-variable "cidr_block" {
-  type = string
-  default = "10.0.0.0/16"
+variable "cluster_name" {
+  description = "The name of the ECS cluster"
+  type        = string
+  default     = "my-ecs-cluster"
 }
 
 variable "vpc_name" {
-  type = string 
-  default = "ECS VPC"
+  description = "The name of the VPC"
+  type        = string
+  default     = "my-vpc"
+}
+
+variable "cidr_block" {
+  description = "The CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
 }
 
 variable "container_name" {
-    type = string 
+  description = "The name of the ECS container"
+  type        = string
+  default     = "my-container"
 }
 
 variable "ecr_repo_url" {
-    type = string 
+  description = "The URL of the ECR repository for the container image"
+  type        = string
 }
 
 variable "ecs_service_name" {
-  type = string
+  description = "The name of the ECS service"
+  type        = string
+  default     = "my-ecs-service"
 }

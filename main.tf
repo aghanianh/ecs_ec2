@@ -8,7 +8,3 @@ module "ecs" {
   ecr_repo_url    = var.ecr_repo_url
   ecs_service_name = var.ecs_service_name
 }
-
-output "ip_addr" {
-  value = module.ecs.ip_addr
-}
