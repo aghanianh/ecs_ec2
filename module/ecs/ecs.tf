@@ -1,14 +1,9 @@
-# Provider Configuration
-provider "aws" {
-  region = var.aws_region
-}
+# modules/ecs/main.tf
 
-# ECS Cluster
 resource "aws_ecs_cluster" "this" {
   name = var.cluster_name
 }
 
-# VPC
 resource "aws_vpc" "this" {
   cidr_block = var.cidr_block
   tags = {
@@ -16,17 +11,15 @@ resource "aws_vpc" "this" {
   }
 }
 
-# Public Subnet
 resource "aws_subnet" "this" {
   vpc_id                  = aws_vpc.this.id
   map_public_ip_on_launch = true
-  cidr_block              = cidrsubnet(aws_vpc.this.cidr_block, 8, 0) # Adjust as needed
+  cidr_block              = cidrsubnet(aws_vpc.this.cidr_block, 8, 0)
   tags = {
     Name = "${var.vpc_name}_public_subnet"
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
   tags = {
@@ -34,7 +27,6 @@ resource "aws_internet_gateway" "this" {
   }
 }
 
-# Route Table
 resource "aws_route_table" "this" {
   vpc_id = aws_vpc.this.id
   route {
@@ -46,15 +38,19 @@ resource "aws_route_table" "this" {
   }
 }
 
-# Route Table Association
 resource "aws_route_table_association" "this" {
   route_table_id = aws_route_table.this.id
   subnet_id      = aws_subnet.this.id
 }
 
-# Security Group
 resource "aws_security_group" "this" {
   vpc_id = aws_vpc.this.id
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   ingress {
     from_port   = 5000
     to_port     = 5000
@@ -72,7 +68,6 @@ resource "aws_security_group" "this" {
   }
 }
 
-# IAM Role for EC2 Instance
 resource "aws_iam_role" "ecs_instance_role" {
   name = "ecs-instance-role"
 
@@ -90,19 +85,16 @@ resource "aws_iam_role" "ecs_instance_role" {
   })
 }
 
-# Attach AmazonEC2ContainerServiceforEC2Role Policy to EC2 Instance Role
 resource "aws_iam_role_policy_attachment" "ecs_instance_role_attachment" {
   role       = aws_iam_role.ecs_instance_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
-# IAM Instance Profile for EC2 Instance
 resource "aws_iam_instance_profile" "ecs_instance_profile" {
   name = "ecs-instance-profile"
   role = aws_iam_role.ecs_instance_role.name
 }
 
-# IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecs-task-execution-role"
 
@@ -120,24 +112,25 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 }
 
-# Attach AmazonECSTaskExecutionRolePolicy to ECS Task Execution Role
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# ECS Task Definition
 resource "aws_ecs_task_definition" "this" {
   family                   = "ecs-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  container_definitions    = jsonencode([
+  cpu                      = "256"
+  memory                   = "512"
+
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  container_definitions = jsonencode([
     {
       name      = var.container_name
       image     = var.ecr_repo_url
-      memory    = 512
       essential = true
+      memory    = 512
       portMappings = [
         {
           containerPort = 5000
@@ -148,7 +141,6 @@ resource "aws_ecs_task_definition" "this" {
   ])
 }
 
-# ECS Service
 resource "aws_ecs_service" "ecs_service" {
   name            = var.ecs_service_name
   cluster         = aws_ecs_cluster.this.id
@@ -157,27 +149,13 @@ resource "aws_ecs_service" "ecs_service" {
   launch_type     = "EC2"
 
   network_configuration {
-    subnets          = [aws_subnet.this.id]
-    security_groups  = [aws_security_group.this.id]
-    assign_public_ip = true
-  }
-
-  depends_on = [aws_instance.ecs_instance]
-}
-
-# EC2 Instance
-data "aws_ami" "ecs_optimized" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+    subnets         = [aws_subnet.this.id]
+    security_groups = [aws_security_group.this.id]
   }
 }
 
 resource "aws_instance" "ecs_instance" {
-  ami                         = data.aws_ami.ecs_optimized.id
+  ami                         = "ami-0c02fb55956c7d316" # Amazon ECS-optimized AMI
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.this.id
   vpc_security_group_ids      = [aws_security_group.this.id]
@@ -194,15 +172,10 @@ resource "aws_instance" "ecs_instance" {
   }
 }
 
-# Outputs
-output "ecs_cluster_name" {
-  value = aws_ecs_cluster.this.name
+output "ip_addr" {
+  value = aws_instance.ecs_instance.public_ip
 }
 
 output "ecs_service_name" {
   value = aws_ecs_service.ecs_service.name
-}
-
-output "ec2_instance_public_ip" {
-  value = aws_instance.ecs_instance.public_ip
 }
