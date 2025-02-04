@@ -1,60 +1,32 @@
-name: Build, Push, and Deploy to ECR
-
+name: Deploy
 on:
-  push:
-    branches:
-      - main  # Trigger on push to the main branch
-  pull_request:
-    branches:
-      - main  # Trigger on pull requests to the main branch
+  workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1  # Replace with your AWS region
-  ECR_REPOSITORY: my-ecr-repo  # Replace with your ECR repository name
-  IMAGE_TAG: latest  # Docker image tag
+  ECR_REGISTRY: "123456789012.dkr.ecr.us-east-1.amazonaws.com"
+  ECR_REPOSITORY: "my-ecr-repo"
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ env.ECR_REPOSITORY }} -f App/Dockerfile App/
-
-      - name: Tag Docker image
-        run: |
-          docker tag ${{ env.ECR_REPOSITORY }}:latest \
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-
-      - name: Push Docker image to ECR
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-
-      - name: Output ECR repository URL
-        id: ecr-url
-        run: |
-          echo "::set-output name=ecr_url::${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
-      - name: Install Terraform
+      - name: Download Terraform
         uses: hashicorp/setup-terraform@v3
-      - name: Teraform Init
-        run: |
-          terraform init 
+        with:
+          terraform_version: "1.10.5"
+
+      - name: Terraform Initialization
+        run: terraform init 
+     
+      - name: Get AWS ECR Registry URL
+        run: echo "ECR_REGISTRY=$(aws ecr describe-registry --query 'registryId' --output text).dkr.ecr.us-east-1.amazonaws.com" >> $GITHUB_ENV
 
       - name: Terraform Apply
-        run: |
-          terraform apply -auto-approve
+        run: terraform apply -auto-approve -var "image_name=985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:${GITHUB_SHA}"

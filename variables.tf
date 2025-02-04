@@ -51,5 +51,5 @@ variable "desired_count" {
 }
 
 variable "image_name" {
-  type = string 
+    type = string 
 }
