@@ -47,9 +47,6 @@ variable "container_port" {
 variable "desired_count" {
   type = number 
   default = 2
-  
+    
 }
 
-variable "image_name" {
-    type = string 
-}

@@ -52,4 +52,6 @@ variable "desired_count" {
 
 variable "image_name" {
   type = string 
+  default =  "985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:6aaa36858c6be92dd464f4030f92cee09ade82fa"
+  
 }
