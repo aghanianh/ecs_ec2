@@ -104,14 +104,14 @@ resource "aws_security_group" "ecs_node_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Restrict this to your IP range for better security
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Dynamic port range for ECS tasks
+    cidr_blocks = ["0.0.0.0/0"]  
   }
 
   egress {
@@ -209,7 +209,7 @@ resource "aws_lb_target_group" "app" {
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.id
-  port              = 80
+  port              = 5000
   protocol          = "HTTP"
 
   default_action {
