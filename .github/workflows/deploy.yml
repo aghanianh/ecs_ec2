@@ -1,6 +1,9 @@
 name: Deploy
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build"]  
+    types:
+      - completed
 
 env:
   ECR_REGISTRY: "123456789012.dkr.ecr.us-east-1.amazonaws.com"
