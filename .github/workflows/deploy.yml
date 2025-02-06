@@ -27,9 +27,8 @@ jobs:
 
       - name: Terraform Initialization
         run: terraform init 
-     
-      - name: Get AWS ECR Registry URL
-        run: echo "ECR_REGISTRY=$(aws ecr describe-registry --query 'registryId' --output text).dkr.ecr.us-east-1.amazonaws.com" >> $GITHUB_ENV
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var "image_name=985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:${GITHUB_SHA}"
+      - name: List files in current directory
+        run: ls -R     
+#      - name: Terraform Apply
+#        run: terraform apply -auto-approve -var "image_name=985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:${GITHUB_SHA}"
