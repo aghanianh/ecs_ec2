@@ -24,7 +24,7 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>New Background color   Background Color: {{ color }}</h1>
+    <h1> V2 Background Color: {{ color }}</h1>
 </body>
 </html>
 """
