@@ -13,6 +13,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Repo Checkout 
+        uses: actions/checkout@v4
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,7 +30,5 @@ jobs:
       - name: Terraform Initialization
         run: terraform init 
 
-      - name: List files in current directory
-        run: ls -R     
-#      - name: Terraform Apply
-#        run: terraform apply -auto-approve -var "image_name=985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:${GITHUB_SHA}"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var "image_name=985539765873.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:${GITHUB_SHA}"
